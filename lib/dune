@@ -1,0 +1,6 @@
+(library
+ (name math)
+ (modules math latex)
+ (public_name math)
+ (libraries zarith))
+
