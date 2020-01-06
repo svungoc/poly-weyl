@@ -23,3 +23,6 @@ lib: [
   "_build/install/default/lib/math/math__Latex.cmx"
   "_build/install/default/lib/math/opam"
 ]
+doc: [
+  "_build/install/default/doc/math/README.md"
+]

@@ -1,4 +1,4 @@
-(** Some functors for various maths structures
+(** Some functors for various algebraic mathematical structures
 
 @author San Vũ Ngọc, 2019-2020 IRMAR, Université de Rennes 1
 
@@ -47,7 +47,7 @@ end
 
 (** Rings without unit
 
-    A module of type [Rng] can be used an [AbelianGroup]. *)
+    A module of type [Rng] can be used as an {!AbelianGroup}. *)
 module type Rng = sig
   include AbelianGroup
   val mul : t -> t -> t
@@ -56,7 +56,7 @@ end
 
 (** Rings with unit
     
-    A module of type [Ring] can be used a [Rng]. *)
+    A module of type [Ring] can be used as a {!Rng}. *)
 module type Ring = sig
   include Rng
   val one : t
@@ -74,7 +74,7 @@ end
   
 (** Commutative fields
 
-    A module of type [Field] can be used as a [Ring], or as a [Group]. *)
+    A module of type [Field] can be used as a {!Ring}, or as a {!Group}. *)
 module type Field = sig
   include Ring
   val inv : t -> t
@@ -93,7 +93,7 @@ end
 
 (** Modules over a ring
 
-    A module of type [Module] can be used as an [AbelianGroup]. *)
+    A module of type [Module] can be used as an {!AbelianGroup}. *)
 module type Module = sig
   type scalar
   (** The scalar type should be compatible with [Rng.t] *)
@@ -104,8 +104,8 @@ end
 
 (** Vector spaces over a field
 
-    A module of type [VSpace] can be used as an [AbelianGroup].  
-    [VSpace] is simply an alias to [Module]; 
+    A module of type [VSpace] can be used as an {!AbelianGroup}.  
+    [VSpace] is simply an alias to {!Module}; 
     it can be used when the scalar ring is a field.  *)
 module type VSpace = Module
 
@@ -113,7 +113,7 @@ module type VSpace = Module
   
 (** Algebras over a field, with unit
 
-    A module of type [Algebra] can be used as a [VSpace], or as a [Ring]. *)
+    A module of type [Algebra] can be used as a {!VSpace}, or as a {!Ring}. *)
 module type Algebra = sig
   type scalar
   include Ring
@@ -125,7 +125,7 @@ end
 
 (** Lie Algebras over a field
 
-    A module of type [LieAlg] can be used as a [VSpace] *)
+    A module of type [LieAlg] can be used as a {!VSpace} *)
 module type LieAlg = sig
   include VSpace
   val bracket : t -> t -> t
@@ -271,7 +271,7 @@ end
 
 (** Polynomials over a ring.
 
-    A module of type [Polynomial] can be used an [Algebra].
+    A module of type [Polynomial] can be used an {!Algebra}.
  *)
 module type Polynomial = sig
   include Algebra
@@ -312,7 +312,7 @@ module RealPoly :
 
 (** Polynomials in one variable. 
 
-    A module of type [Polynomial1] can be used a [Polynomial].
+    A module of type [Polynomial1] can be used a {!Polynomial}.
 
     The default {!Monomial.names} is the string "x" *)
 module type Polynomial1 = sig
