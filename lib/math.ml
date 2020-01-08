@@ -580,7 +580,7 @@ end
 
 module Polynomial1 = struct
   module type S = sig
-    include Polynomial.S with type names = string
+    include Polynomial.S with type names = string and type monomial = Monomial1.t
     type generic
     val x : t
     val of_array : scalar array -> t

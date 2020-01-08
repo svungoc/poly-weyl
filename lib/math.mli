@@ -335,7 +335,7 @@ module RealPoly :
     The default {!Monomial.S.names} is the string "x" *)
 module Polynomial1 : sig
   module type S = sig
-    include Polynomial.S with type names = string
+    include Polynomial.S with type names = string and type monomial = Monomial1.t
     type generic
     val x : t
     (** The "x" polynomial *)
@@ -348,9 +348,7 @@ module Polynomial1 : sig
         polyomial where the original variable is replaced by "x_i". *)
   end
 
-  module Make (R : Ring) : sig
-    include (S with type monomial = Monomial1.t and type scalar = R.t (* and type generic = (Polynomial_generic (R).t) *))
-  end
+  module Make (R : Ring) : (S with type scalar = R.t (* and type generic = (Polynomial_generic (R).t) *))
 end
 
 (** Polynomials in one variable with rational coefficients. 
