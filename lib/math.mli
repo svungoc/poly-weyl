@@ -262,7 +262,7 @@ module Monomial : sig
   
   (** Generic implementation of monomials 
       
-      The default {!Monomial.names} is the map i => "x_i".
+      The default {!Monomial.S.names} is the map i => "x_i".
   *)
   module Generic : (S with type names = int -> string option)
 end
@@ -287,7 +287,7 @@ end
 
 (** Polynomials over a ring.
 
-    A module of type [Polynomial] can be used an {!Algebra}.
+    A module of type [Polynomial] can be used as an {!Algebra}.
  *)
 module Polynomial : sig
   module type S = sig
@@ -332,7 +332,7 @@ module RealPoly :
 
     A module of type [Polynomial1] can be used as a {!Polynomial}.
 
-    The default {!Monomial.names} is the string "x" *)
+    The default {!Monomial.S.names} is the string "x" *)
 module Polynomial1 : sig
   module type S = sig
     include Polynomial.S with type names = string
