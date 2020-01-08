@@ -12,7 +12,7 @@ let check_string s1 s2 =
 let test_monomial () =
   print_endline "\nTest Monomials:";
 
-  let open Monomial_generic in
+  let open Monomial.Generic in
   let o = one in
   let x = xin 5 12 in
   let y = xin 3 27 in
@@ -32,7 +32,7 @@ let test_monomial () =
   check_string (to_tex x) "x";
   assert (degree m = 3);
 
-  let open Monomial_generic in
+  let open Monomial.Generic in
   to_generic 7 m |> to_tex |> check_string "x_7^3";
 
     print_endline "Monomial test passed OK."

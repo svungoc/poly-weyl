@@ -21,22 +21,28 @@ https://katex.org/docs/autorender.html
 module type Group = sig
   type t
   val one : t
-  (* The group unit *)
+  (** The group unit. *)
     
   val inv : t -> t
+  (** Multiplicative inverse. *)
+
   val mul : t -> t -> t
-  val ( * ) : t -> t -> t
   (** Group multiplication. Not necessarily abelian. *)
+  
+  val ( * ) : t -> t -> t
+  (** Group multiplication (infix). *)
     
   val div : t -> t -> t
   val ( / ) : t -> t -> t
-  (** [div a b] is [mul a (inverse b)] *)
+  (** [div a b] is [mul a (inverse b)]. *)
 end
 
 (** Abelian groups, with additive notation *)
 module type AbelianGroup = sig
   type t
   val zero : t
+  (** Neutral element for addition. *)
+  
   val is_zero : t -> bool
   val neg : t -> t
   val add : t -> t -> t
@@ -52,6 +58,7 @@ module type Rng = sig
   include AbelianGroup
   val mul : t -> t -> t
   val ( * ) : t -> t -> t
+  (** Ring multiplication. *)
 end
 
 (** Rings with unit
@@ -60,8 +67,10 @@ end
 module type Ring = sig
   include Rng
   val one : t
+  (** Ring unit element. *)
+  
   val mone : t
-  (** minus one *)
+  (** minus one. *)
 
   val of_int : int -> t
   type names
@@ -78,7 +87,7 @@ end
 module type Field = sig
   include Ring
   val inv : t -> t
-  (** Will raise [Division_by_zero] on the zero element. *)
+  (** Field inverse. Will raise [Division_by_zero] on the zero element. *)
   
   val div : t -> t -> t
   val ( / ) : t -> t -> t
@@ -96,7 +105,8 @@ end
     A module of type [Module] can be used as an {!AbelianGroup}. *)
 module type Module = sig
   type scalar
-  (** The scalar type should be compatible with [Rng.t] *)
+  (** The scalar type should in principle include [Rng.t], but this signature
+     does not enforce it here. *)
     
   include AbelianGroup
   val scal_mul : scalar -> t -> t
@@ -111,11 +121,15 @@ module type VSpace = Module
 
 (** {2 Algebras and Lie Algebras} *)
   
-(** Algebras over a field, with unit
+(** Algebras over a ring, with unit
 
-    A module of type [Algebra] can be used as a {!VSpace}, or as a {!Ring}. *)
+    A module of type [Algebra] can be used as a {!Module}, or as a {!Ring}.  It
+   can be used as a {!VSpace} if the scalar type includes the {!Field}
+   signature. *)
 module type Algebra = sig
   type scalar
+  (** Type of the scalar Ring. *)
+    
   include Ring
   val of_scalar : scalar -> t
   (** [of_scalar s] is [scal_mul s one] *)
@@ -123,11 +137,11 @@ module type Algebra = sig
   val scal_mul : scalar -> t -> t
 end
 
-(** Lie Algebras over a field
+(** Lie Algebras over a ring
 
-    A module of type [LieAlg] can be used as a {!VSpace} *)
+    A module of type [LieAlg] can be used as a {!Module} *)
 module type LieAlg = sig
-  include VSpace
+  include Module
   val bracket : t -> t -> t
 end
 
@@ -141,8 +155,8 @@ module Integers : Ring with type t = Z.t
 
 (** Machine integers
 
-    This module is the cyclic Ring based on the usual [int] type, which is
-    machine-dependent (31 or 63 bits) *)
+    This module is the cyclic ring based on the usual [int] type, which is
+   machine-dependent (32 or 64 bits) *)
 module Int : Ring with type t = int
 
 (** Exact Rational numbers
@@ -197,63 +211,65 @@ module Iset : (Set.S with type elt = int)
     support (the sequences of exponents [a_0,a_1,...]), where the group operation
     is now the addition. Hence the API exposes both the multiplicative and the
     additive notation.  *)
-module type Monomial = sig
-  include AbelianGroup
-  val one : t
-  (** The constant mononial 1; same as [zero], in additive notation. *)
-  
-  val degree : t -> int
-  val support : t -> Iset.t
-  (** [support m] is the list of indices of [m] with non-zero exponents *)
-
-  val xi : int -> t
-  (** [xi i] is the monomial "x_i" *)
-
-  val xin : int -> int -> t
-  (** [xin i n] is the monomial x_i^n *)
-
-  val mul : t -> t -> t
-  val ( * ) : t -> t -> t
-  (** multiplication of two monomials; same as addition of exponents. *)
-
-  val div : t -> t -> t
-  val (/) : t -> t -> t
-  (** [div m1 m2] is the division of [m1] by [m2]. This can produce negative
-     exponents. Same as substraction of exponents. *)
-
-  val imul : int -> t -> t
-  (** [imul i m] is m muliplied by x_i *)
-
-  val of_list : (int * int) list -> t
-  (** Create a monomial [x_{i1}^{a1}x_{i2}^{a2}...] from a list of the form
-     [[(i1,a1); (i2,a2), ...]]. If the same index i appears several times, only
-     the last one will be taken into account.  *)
-  
-  val to_list : t -> (int * int) list
-  module Compare :
-  sig
-    type nonrec t = t
-    val compare : t -> t -> int
+module Monomial : sig
+  module type S = sig
+    include AbelianGroup
+    val one : t
+    (** The constant mononial 1; same as [zero], in additive notation. *)
+      
+    val degree : t -> int
+    val support : t -> Iset.t
+    (** [support m] is the list of indices of [m] with non-zero exponents *)
+                         
+    val xi : int -> t
+    (** [xi i] is the monomial "x_i" *)
+      
+    val xin : int -> int -> t
+    (** [xin i n] is the monomial x_i^n *)
+      
+    val mul : t -> t -> t
+    val ( * ) : t -> t -> t
+    (** multiplication of two monomials; same as addition of exponents. *)
+      
+    val div : t -> t -> t
+    val (/) : t -> t -> t
+    (** [div m1 m2] is the division of [m1] by [m2]. This can produce negative
+        exponents. Same as substraction of exponents. *)
+      
+    val imul : int -> t -> t
+    (** [imul i m] is m muliplied by x_i *)
+      
+    val of_list : (int * int) list -> t
+    (** Create a monomial [x_{i1}^{a1}x_{i2}^{a2}...] from a list of the form
+        [[(i1,a1); (i2,a2), ...]]. If the same index i appears several times, only
+        the last one will be taken into account.  *)
+      
+    val to_list : t -> (int * int) list
+    module Compare :
+    sig
+      type nonrec t = t
+      val compare : t -> t -> int
+    end
+    type names
+    (** A variable of type [names] is used to print out the variables. The precise
+        type depends on the implementation. *)
+      
+    (* We should not override the original signature of "to_tex" to make sure
+       that Polynomial is compatible with Algebra *)
+    val to_tex : ?names:names -> t -> string
+    val of_tex : string -> t
   end
-  type names
-  (** A variable of type [names] is used to print out the variables. The precise
-     type depends on the implementation. *)
-
-  (* TODO We should not override the original signature of "to_tex" to make sure
-     that Polynomial is compatible with Algebra *)
-  val to_tex : ?names:names -> t -> string
-  val of_tex : string -> t
+  
+  (** Generic implementation of monomials 
+      
+      The default {!Monomial.names} is the map i => "x_i".
+  *)
+  module Generic : (S with type names = int -> string option)
 end
-
-(** Generic implementation of monomials 
-
-    The default {!Monomial.names} is the map i => "x_i".
-*)
-module Monomial_generic : (Monomial with type names = int -> string option)
 
 (** A simpler implementation for Monomials in 1 variable [x_0] *)
 module Monomial1 : sig
-  include Monomial with type names = string
+  include Monomial.S with type names = string
   (* We could expose the type with "with type t = int", but it would be confusing
      to have "1*1=2", etc. *)
   val x : t
@@ -262,7 +278,7 @@ module Monomial1 : sig
   val xn : int -> t
   (** The "x^n" monomial *)
     
-  val to_generic : int -> t -> Monomial_generic.t
+  val to_generic : int -> t -> Monomial.Generic.t
   (** [to_generic i m] transforms the 1D monomial [m] into a generic
      monomial where the original variable is replaced by "x_i". *)
 end
@@ -273,64 +289,68 @@ end
 
     A module of type [Polynomial] can be used an {!Algebra}.
  *)
-module type Polynomial = sig
-  include Algebra
-  type monomial
-  val const : scalar -> t
-  (** Constant polynomials *)
+module Polynomial : sig
+  module type S = sig
+    include Algebra
+    type monomial
+    val const : scalar -> t
+    (** Constant polynomials *)
 
-  val xi : int -> t
-  (** [xi i] is the polynomial 'x_i' *)
+    val xi : int -> t
+    (** [xi i] is the polynomial 'x_i' *)
+      
+    val of_monomial : monomial -> t
+    val add_monomial : monomial -> scalar -> t -> t
+    (** [add_monomial c m p] adds the monomial [m] with coefficient [c] to the
+        polynomial [p] *)
+      
+    val of_list : (scalar * monomial) list -> t
+    (** Create a polynomial by adding all monomials with their given
+        coefficients. *)
+  end
   
-  val of_monomial : monomial -> t
-  val add_monomial : monomial -> scalar -> t -> t
-  (** [add_monomial c m p] adds the monomial [m] with coefficient [c] to the
-      polynomial [p] *)
-
-  val of_list : (scalar * monomial) list -> t
-  (** Create a polynomial by adding all monomials with their given
-      coefficients. *)
+  (** The Polynomial functor *)
+  module Make (M : Monomial.S) (R : Ring) :
+    (S with type monomial = M.t and type scalar = R.t)
+    
+  (** Generic polynomials with arbitrary number of variables *)
+  module Generic (R : Ring) :
+    (S with type monomial = Monomial.Generic.t and type scalar = R.t)
 end
-
-(** The Polynomial functor *)
-module Polynomial_make (M : Monomial) (R : Ring) :
-  (Polynomial with type monomial = M.t and type scalar = R.t)
-
-(** Generic polynomials with arbitrary number of variables *)
-module Polynomial_generic (R : Ring) :
-  (Polynomial with type monomial = Monomial_generic.t and type scalar = R.t)
 
 (** Polynomials with rational coefficients with arbitrary number of variables *)
 module RatPoly :
-  (Polynomial with type monomial = Monomial_generic.t and type scalar = Rationals.t)
+  (Polynomial.S with type monomial = Monomial.Generic.t and type scalar = Rationals.t)
 
 (** Polynomials with real coefficients with arbitrary number of variables *)
 module RealPoly :
-  (Polynomial with type monomial = Monomial_generic.t and type scalar = RealNumbers.t)  
+  (Polynomial.S with type monomial = Monomial.Generic.t and type scalar = RealNumbers.t)  
 
 (** {3 Polynomials in one variable} *)
 
 (** Polynomials in one variable. 
 
-    A module of type [Polynomial1] can be used a {!Polynomial}.
+    A module of type [Polynomial1] can be used as a {!Polynomial}.
 
     The default {!Monomial.names} is the string "x" *)
-module type Polynomial1 = sig
-  include Polynomial with type names = string
-  type generic
-  val x : t
-  (** The "x" polynomial *)
-  
-  val of_array : scalar array -> t
-  (** For instance [of_array [| 3; 4; 5|]] is the polynomial [3 + 4x + 5x^2]. *)
-
-  val to_generic : int -> t -> generic
+module Polynomial1 : sig
+  module type S = sig
+    include Polynomial.S with type names = string
+    type generic
+    val x : t
+    (** The "x" polynomial *)
+      
+    val of_array : scalar array -> t
+    (** For instance [of_array [| 3; 4; 5|]] is the polynomial [3 + 4x + 5x^2]. *)
+      
+    val to_generic : int -> t -> generic
     (** [to_generic i p] transforms the 1D polyomial [p] into a generic
         polyomial where the original variable is replaced by "x_i". *)
-end
+  end
 
-module Polynomial1_make (R : Ring) : sig
-  include (Polynomial1 with type monomial = Monomial1.t and type scalar = R.t (* and type generic = (Polynomial_generic (R).t) *))
+  module Make (R : Ring) : sig
+    include (S with type monomial = Monomial1.t and type scalar = R.t (* and type generic = (Polynomial_generic (R).t) *))
+  end
 end
 
 (** Polynomials in one variable with rational coefficients. 
@@ -349,7 +369,10 @@ should print:
 ]}
 *)
 module RatPoly1 :
-  (Polynomial1 with type monomial = Monomial1.t and type scalar = Rationals.t and type generic = RatPoly.t)
+  (Polynomial1.S
+   with type monomial = Monomial1.t
+    and type scalar = Rationals.t
+    and type generic = RatPoly.t)
    
 (** Polynomials in one variable with real (float) coefficients. 
 
@@ -367,7 +390,10 @@ should print:
 ]}
 *)
 module RealPoly1 :
-  (Polynomial1 with type monomial = Monomial1.t and type scalar = RealNumbers.t and type generic = RealPoly.t)
+  (Polynomial1.S
+   with type monomial = Monomial1.t
+    and type scalar = RealNumbers.t
+    and type generic = RealPoly.t)
 
 
 (* module DummyAlg (F : Field) = *)
