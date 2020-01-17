@@ -54,7 +54,7 @@ let char_unop = [ 'f' ] (* user defined *)
 
 let tex_binop = [ "frac" ] (* etc... *)
 
-let tex_infix = [ "_*"; "times"; "div"; "star" ] (* etc... *)
+let tex_infix = [ "_*"; "times"; "div"; "star"; "oplus"; "otimes" ] (* etc... *)
 (* "_*" is internally used for hidden multiplication like in "xy" *)
 
 let sym_to_string = function
@@ -378,6 +378,128 @@ let rec to_latex = function
   | Paren (Char '(', e) -> "(" ^ (to_latex e) ^ ")"
   | Paren (c, _) ->
     raise (Invalid_argument ("Parenthesis with " ^ (to_latex (Symbol c))))
+
+
+(*****************************************)
+(*   conversion LaTeX -> pdf or image   *)
+(*****************************************)
+
+(* we use okular to view the pdf. See below *)
+
+exception Shell_error of (int * string)
+
+let which command =
+  (* BETTER: (specially for portability to WIN/MAC) use
+     https://opam.ocaml.org/packages/fileutils/ *)
+  try
+    let s = Unix.open_process_in ("which " ^ command) in
+    let res = try 
+        Some (input_line s)
+      with
+      | _ -> None in begin
+      match Unix.close_process_in s with
+      | Unix.WEXITED 0 -> res
+      | Unix.WEXITED 1 -> None (* in principle this is redundant since `res`
+                                  is already None at this point *)
+      | _ -> print_endline "ERROR: The `which` command exited with error.";
+        None
+    end
+  with
+  | _ -> print_endline "ERROR: Cannot use the `which` command.";
+    None;;
+
+
+let pdf_viewers_linux = ["xdg-open"; "okular"; "evince"; "mupdf"; "xpdf" ]
+
+let rec find_which = function
+  | [] -> None
+  | name::rest -> if which name <> None
+    then Some name else find_which rest
+        
+let pdf_viewer =
+  let list = match which "sw_vers" with
+    | None -> pdf_viewers_linux
+    | Some _ -> (* We assume MacOS *)
+      "open" :: pdf_viewers_linux in
+  ref (find_which list)
+
+let browser = ref "firefox"
+  
+let set_pdf_viewer s =
+  pdf_viewer := Some s
+
+let set_browser s =
+  browser := s
+    
+let shell command = 
+  let exec s = match (Sys.command s) with
+    | 0 -> ()
+    | a -> raise (Shell_error (a,s)) in
+    Printf.kprintf exec command;;
+
+(* generate a latex file and return the base name *)
+let latex_file code =
+  let base_name = Filename.temp_file "math-" "" in
+  let latex_tmp = base_name ^ ".tex" in
+  let latex_channel = open_out latex_tmp in
+  output_string latex_channel 
+    "\\documentclass{article}
+\\usepackage{color}
+\\usepackage[utf8]{inputenc}
+\\usepackage[active,tightpage]{preview}
+\\begin{document}
+\\begin{preview}\n";
+  output_string latex_channel code;
+  output_string latex_channel "\\end{preview}\n\\end{document}\n";
+  close_out latex_channel;
+  base_name
+
+let latex_to_pdf code size =
+  let base_name = latex_file code in
+  let output = Printf.sprintf "%s.pdf" base_name in
+  let dirname = Filename.dirname base_name in
+  let currentdir = Sys.getcwd () in
+  Sys.chdir dirname;
+  shell "latex '\\nonstopmode\\input{%s.tex}'" base_name;
+  shell "dvips -D 600 %s.dvi -o %s.ps" base_name base_name;
+  (* Use following line instead of the next one to have a png image
+     with transparent background: *)
+  (* shell "gs -sDEVICE=pngalpha -dTextAlphaBits=4 -r%d -dGraphicsAlphaBits=4 -dSafer -q -dNOPAUSE -sOutputFile=%s.png %s.ps -c quit" *)
+  shell "gs -sDEVICE=pdfwrite -r%d -dSafer -q -dNOPAUSE -sOutputFile=%s %s.ps -c quit"
+    (size *  6) output base_name;
+  Sys.remove base_name;
+  Sys.remove (base_name ^ ".aux");
+  Sys.remove (base_name ^ ".log");
+  Sys.remove (base_name ^ ".tex");
+  Sys.remove (base_name ^ ".dvi");
+  Sys.remove (base_name ^ ".ps");
+  Sys.chdir currentdir; output
+
+let online ?(displaymode=true) latex =
+  let left, right = if displaymode then "\\[", "\\]" else "\\(", "\\)"  in
+  let html = Printf.sprintf "<!DOCTYPE html><html><head><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css\" integrity=\"sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq\" crossorigin=\"anonymous\"><script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js\" integrity=\"sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz\" crossorigin=\"anonymous\"></script><script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js\" integrity=\"sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI\"	 crossorigin=\"anonymous\"onload=\"renderMathInElement(document.body);\"></script> </head> <body>%s%s%s.</body></html>" left latex right in
+  let name = Filename.temp_file "latex-" "html" in
+  let channel = open_out name in
+  output_string channel html;
+  close_out channel;
+  shell "%s %s &" !browser name
+
+let display latex =
+  match !pdf_viewer with
+  | Some pdf -> begin
+      try
+        shell "%s %s &" pdf (latex_to_pdf ( "$" ^ latex ^ "$") 18)
+      with _ -> online latex
+    end
+  | None -> online latex
+
+let html latex =
+  try
+    let latex = latex_file ( "$" ^ latex ^ "$") in
+    shell "hevea %s.tex -o %s.html" latex latex;
+    shell "%s %s.html &" !browser latex
+  with _ -> online latex
+
 
 (* 
 Local Variables:

@@ -1,0 +1,18 @@
+lib: [
+  "_build/install/default/lib/math-latex/META"
+  "_build/install/default/lib/math-latex/dune-package"
+  "_build/install/default/lib/math-latex/latex.a"
+  "_build/install/default/lib/math-latex/latex.cma"
+  "_build/install/default/lib/math-latex/latex.cmi"
+  "_build/install/default/lib/math-latex/latex.cmt"
+  "_build/install/default/lib/math-latex/latex.cmti"
+  "_build/install/default/lib/math-latex/latex.cmx"
+  "_build/install/default/lib/math-latex/latex.cmxa"
+  "_build/install/default/lib/math-latex/latex.cmxs"
+  "_build/install/default/lib/math-latex/latex.ml"
+  "_build/install/default/lib/math-latex/latex.mli"
+  "_build/install/default/lib/math-latex/opam"
+]
+doc: [
+  "_build/install/default/doc/math-latex/README.md"
+]

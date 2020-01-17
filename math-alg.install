@@ -1,0 +1,18 @@
+lib: [
+  "_build/install/default/lib/math-alg/META"
+  "_build/install/default/lib/math-alg/dune-package"
+  "_build/install/default/lib/math-alg/math.a"
+  "_build/install/default/lib/math-alg/math.cma"
+  "_build/install/default/lib/math-alg/math.cmi"
+  "_build/install/default/lib/math-alg/math.cmt"
+  "_build/install/default/lib/math-alg/math.cmti"
+  "_build/install/default/lib/math-alg/math.cmx"
+  "_build/install/default/lib/math-alg/math.cmxa"
+  "_build/install/default/lib/math-alg/math.cmxs"
+  "_build/install/default/lib/math-alg/math.ml"
+  "_build/install/default/lib/math-alg/math.mli"
+  "_build/install/default/lib/math-alg/opam"
+]
+doc: [
+  "_build/install/default/doc/math-alg/README.md"
+]

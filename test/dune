@@ -1,6 +1,6 @@
 (executable
  (name test)
- (libraries math))
+ (libraries math latex))
 
 (alias
  (name buildtest)

@@ -2,7 +2,39 @@
 
 Computer implementation of generic polynomials and semiclassical Weyl algebra
 
-Work in progress... currently only basic functors, and
-Polynomials (over arbitrary rings) are implemented.
+Work in progress...
 
++ Basics algebraic structures:
+
+	- groups
+	- rings
+	- fields
+	- modules over a ring
+	- vector spaces over a field
+	- algebra over a ring
+	- Lie algegra
+
++ Usual implementations
+
+	- machine integers
+	- arbitrary long integers (Zarith)
+	- exact rationals (Zarith)
+	- machine float ("real numbers")
+	- complex numbers
+	- complexification of an arbitrary field
+	
++ Polynomials (over arbitrary rings)
+
+	- arbitrary number of variables
+	- special implementation for one variable
+	- usual operations: addition, multiplication, integer power, derivation
+	- printing via conversion to LaTeX
+	- display formula in browser or PDF (via the *Latex* module)
+
++ Semiclassical Weyl algebras
+
+	- Canonical variables (q,p) and semiclassical parameter ħ
+	- Poisson bracket
+	- ... TODO
+	
 [Documentation](https://svungoc.github.io/poly-weyl/index.html) is available.

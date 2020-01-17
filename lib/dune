@@ -1,6 +1,12 @@
 (library
  (name math)
- (modules math latex)
- (public_name math)
+ (modules math)
+ (public_name math-alg)
  (libraries zarith))
+
+(library
+ (name latex)
+ (modules latex)
+ (public_name math-latex)
+ (libraries unix))
 

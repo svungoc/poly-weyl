@@ -8,7 +8,11 @@
 (source (github svungoc/math))
 
 (package
- (name math)
+ (name math-alg)
  (synopsis "Various basic mathematical algebraic structures")
  (depends
   (zarith (>= 1.9.1))))
+
+(package
+ (name math-latex)
+ (synopsis "Parsing simple LaTeX math expressions"))

@@ -184,5 +184,22 @@ val to_latex : expr -> string
     If not, please report a bug.
  *)
 
+(** {1 Display LaTeX}
 
+These are just convenience functions to typeset and display LaTeX code.  *)
 
+val display : string -> unit
+(** If a PDF viewer is found, convert the given LaTeX formula to PDF and display
+   it. Otherwise, use a browser with {!online}. *)
+
+val html : string -> unit
+(** If the Hevea program is found, convert to html and open a
+   browser. Otherwise, use {!online}. *)
+
+val online : ?displaymode:bool -> string -> unit
+(** Open a browser for online typesetting with KaTeX. *)
+  
+val set_pdf_viewer : string -> unit
+
+val set_browser : string -> unit
+  

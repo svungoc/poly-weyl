@@ -35,6 +35,9 @@ module type Group = sig
   val div : t -> t -> t
   val ( / ) : t -> t -> t
   (** [div a b] is [mul a (inverse b)]. *)
+
+  val equal : t -> t -> bool
+  val (==) : t -> t -> bool
 end
 
 (** Abelian groups, with additive notation *)
@@ -49,6 +52,8 @@ module type AbelianGroup = sig
   val (+) : t -> t -> t
   val sub : t -> t -> t
   val (-) : t -> t -> t
+  val equal : t -> t -> bool
+  val (==) : t -> t -> bool
 end
 
 (** Rings without unit
@@ -59,6 +64,10 @@ module type Rng = sig
   val mul : t -> t -> t
   val ( * ) : t -> t -> t
   (** Ring multiplication. *)
+
+  val pow : int -> t -> t
+  (** [pow n x] is [x] raised to the power [n].  *)
+
 end
 
 (** Rings with unit
@@ -201,16 +210,17 @@ module AlgebraOfField (F : Field) :
 module Iset : (Set.S with type elt = int)
 (* module Imap : (Map.S with type key = int) *)
               
-(** Abelian group of abstract monomial in arbitrary number of coordinates. 
-    
-    A monomial represents [x_0^{a_0}··· x_n^{a_n}] where [x_j] are formal
-    indeterminates and [a_j] are integers (negative exponents are allowed). The
-    group operation is the multiplication of monomials.
-    
+(** Abelian group of abstract monomial in arbitrary number of coordinates.
+
+    A monomial represents {%html:\(x_0^{a_0}··· x_n^{a_n}\)%} where
+   {%html:\(x_j\)%} are formal indeterminates and {%html:\(a_j\)%} are integers
+   (negative exponents are allowed). The group operation is the multiplication
+   of monomials.
+
     This group is isomorphic to the group of sequences of integers with finite
-    support (the sequences of exponents [a_0,a_1,...]), where the group operation
-    is now the addition. Hence the API exposes both the multiplicative and the
-    additive notation.  *)
+   support (the sequences of exponents {%html:\([a_0,a_1,...]\)%}), where the
+   group operation is now the addition. Hence the API exposes both the
+   multiplicative and the additive notation.  *)
 module Monomial : sig
   module type S = sig
     include AbelianGroup
@@ -218,14 +228,19 @@ module Monomial : sig
     (** The constant mononial 1; same as [zero], in additive notation. *)
       
     val degree : t -> int
+    (** Total degree *)
+
     val support : t -> Iset.t
     (** [support m] is the list of indices of [m] with non-zero exponents *)
+
+    val exponent : int -> t -> int
+    (** [exponent i m] is the exponent of the [i]-eth variable. *)
                          
     val xi : int -> t
-    (** [xi i] is the monomial "x_i" *)
+    (** [xi i] is the monomial {%html:\(x_i\)%} *)
       
     val xin : int -> int -> t
-    (** [xin i n] is the monomial x_i^n *)
+    (** [xin i n] is the monomial {%html:\(x_i^n\)%} *)
       
     val mul : t -> t -> t
     val ( * ) : t -> t -> t
@@ -237,12 +252,12 @@ module Monomial : sig
         exponents. Same as substraction of exponents. *)
       
     val imul : int -> t -> t
-    (** [imul i m] is m muliplied by x_i *)
+    (** [imul i m] is [m] muliplied by {%html:\(x_i\)%} *)
       
     val of_list : (int * int) list -> t
-    (** Create a monomial [x_{i1}^{a1}x_{i2}^{a2}...] from a list of the form
-        [[(i1,a1); (i2,a2), ...]]. If the same index i appears several times, only
-        the last one will be taken into account.  *)
+    (** Create a monomial {%html:\(x_{i_1}^{a_1}x_{i_2}^{a_2}\dots\)%} from a
+       list of the form [[(i1,a1); (i2,a2), ...]]. If the same index i appears
+       several times, only the last one will be taken into account.  *)
       
     val to_list : t -> (int * int) list
     module Compare :
@@ -262,25 +277,28 @@ module Monomial : sig
   
   (** Generic implementation of monomials 
       
-      The default {!Monomial.S.names} is the map i => "x_i".
+      The default {!Monomial.S.names} is the map i => {%html:\(x_i\)%}.
   *)
   module Generic : (S with type names = int -> string option)
 end
 
-(** A simpler implementation for Monomials in 1 variable [x_0] *)
+(** A simpler implementation for Monomials in 1 variable {%html:\(x_0\)%} *)
 module Monomial1 : sig
   include Monomial.S with type names = string
   (* We could expose the type with "with type t = int", but it would be confusing
      to have "1*1=2", etc. *)
   val x : t
-  (** The "x" monomial *)
+  (** The {%html:\(x\)%} monomial *)
 
   val xn : int -> t
-  (** The "x^n" monomial *)
+  (** The {%html:\(x^n\)%} monomial *)
     
   val to_generic : int -> t -> Monomial.Generic.t
   (** [to_generic i m] transforms the 1D monomial [m] into a generic
-     monomial where the original variable is replaced by "x_i". *)
+      monomial where the original variable is replaced by {%html:\(x_i\)%}. *)
+
+  val set_default_name : names -> unit
+    
 end
 
 (** {2 Polynomials} *)
@@ -293,17 +311,39 @@ module Polynomial : sig
   module type S = sig
     include Algebra
     type monomial
+    val degree : t -> int option
+    (** Degree of a non-zero polynomial, or None for the zero polynomial. *)
+
+    val idegree : int -> t -> int option
+    (** Degree in the [i]-eth variable. *)
+
+    val imax : t -> int option
+    (** Maximum index [i] of variables {%html:\(x_i\)%} appearing in the
+       polynomial.  If [n = imax p] then [p] can be seen as a polynomial in
+       {%html:\((x_0,\dots,x_n)\)%}.  Returns [None] if [p] is zero.*)
+    
     val const : scalar -> t
     (** Constant polynomials *)
 
     val xi : int -> t
-    (** [xi i] is the polynomial 'x_i' *)
+    (** [xi i] is the polynomial {%html:\(x_i\)%} *)
       
     val of_monomial : monomial -> t
+    (** Return the polynomial consisting of the given monomial multiplied by the
+       unit ring element. *)
+    
     val add_monomial : monomial -> scalar -> t -> t
     (** [add_monomial c m p] adds the monomial [m] with coefficient [c] to the
         polynomial [p] *)
-      
+
+    val partial : int -> t -> t
+    (** [partial i p] is the partial derivative of [p] with respect to the
+       [i]-eth variable. *)
+
+    val diff : monomial -> t -> t
+    (** [diff monomial : t -> t] is the differential operator obtained by
+       replacing the ieth variable in the monomial by the ieth derivative. *)
+    
     val of_list : (scalar * monomial) list -> t
     (** Create a polynomial by adding all monomials with their given
         coefficients. *)
@@ -332,23 +372,44 @@ module RealPoly :
 
     A module of type [Polynomial1] can be used as a {!Polynomial}.
 
-    The default {!Monomial.S.names} is the string "x" *)
+    The default {!Monomial.S.names} is the string ["x"] *)
 module Polynomial1 : sig
   module type S = sig
     include Polynomial.S with type names = string and type monomial = Monomial1.t
     type generic
     val x : t
-    (** The "x" polynomial *)
-      
+    (** The {%html:\(x\)%} polynomial *)
+
     val of_array : scalar array -> t
-    (** For instance [of_array [| 3; 4; 5|]] is the polynomial [3 + 4x + 5x^2]. *)
-      
+    (** For instance [of_array [| 3; 4; 5|]] is the polynomial 
+        {%html:\(3 + 4x + 5x^2\)%}. *)
+
     val to_generic : int -> t -> generic
     (** [to_generic i p] transforms the 1D polyomial [p] into a generic
-        polyomial where the original variable is replaced by "x_i". *)
+       polyomial where the original variable is replaced by {%html:\(x_i\)%}. *)
+
+    val set_default_name : string -> unit
+    (** Set the default string used to convert the variable to LaTeX
+        code. Default is ["x"]. *)
   end
 
   module Make (R : Ring) : (S with type scalar = R.t (* and type generic = (Polynomial_generic (R).t) *))
+
+  (** {4 Polynomials over polynomials}
+
+      Since polynomials form a ring, one can construct polynomials in two
+      variables as polynomials in one variable over the ring of polynomials in
+      one variable. Namely, one can write fo instance:
+      
+      {[module RatPoly2 = Polynomial1.Make(RatPoly1)]}
+
+      Elements of [RatPoly2] are now polynomials in one variable whose
+      coefficients are polynomials in one variable with rational coefficients; 
+      they can be viewed as polynomials in two variables with 
+      rational coefficients. 
+      In order to distinguish the two variables in LaTeX output, 
+      one should do for instance [RatPoly1.set_default_name "t"].
+  *)
 end
 
 (** Polynomials in one variable with rational coefficients. 
@@ -393,7 +454,54 @@ module RealPoly1 :
     and type scalar = RealNumbers.t
     and type generic = RealPoly.t)
 
+(** {1 Semiclassical Weyl Algebras}
 
+ A semiclassical Weyl algebra is a polynomial algebra with variables 
+    {%html:\((\hbar, q_1, p_1, q_2, p_2, \dots)\)%}.
+The degree in the [hbar] variable ({%html:\(\hbar\)%}) is 2.
+
+It is a Lie algebra ({!LieAlg}) with the so-called Moyal bracket.
+
+At first order in [ħ], the Moyal bracket reduces to the Poisson bracket.
+The sign convention here is opposite to the formula in the
+{{:https://en.wikipedia.org/wiki/Poisson_bracket} wikipedia page}.
+
+*)
+  
+module Weyl : sig
+
+  module Monomial : sig
+    include Monomial.S
+    val hbar : t
+    val qi : int -> t
+    val pi : int -> t
+  end
+  
+  (** Construct a Weyl algebra over the coefficient ring R.
+
+
+ *)
+  module Make (R : Ring) : sig
+    include Polynomial.S with type monomial = Monomial.t and type scalar = R.t
+    val hbar : t
+
+    val qi : int -> t
+    (** The {%html:\(q_i\)%} coordinate. *)
+      
+    val pi : int -> t
+    (** The {%html:\(p_i\)%} coordinate. *)
+    
+    val poisson : t -> t -> t
+      (** The Poisson bracket:
+          {%html:\[
+            \{f,g\} = \sum_{i=1}^n \left(\frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i} - \frac{\partial f}{\partial q_i}\frac{\partial g}{\partial p_i}\right).\]%}
+*)
+      
+  end
+end
+
+              
+              
 (* module DummyAlg (F : Field) = *)
 (* struct *)
 (*   type t = F.t * F.t *)
