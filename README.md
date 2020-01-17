@@ -4,6 +4,8 @@ Computer implementation of generic polynomials and semiclassical Weyl algebra
 
 Work in progress...
 
+## Module Math (package math-alg)
+
 + Basics algebraic structures:
 
 	- groups
@@ -36,5 +38,10 @@ Work in progress...
 	- Canonical variables (q,p) and semiclassical parameter ħ
 	- Poisson bracket
 	- ... TODO
-	
+
+## Module Latex (package math-latex)
+
+Conversion to/from Latex code for simple algebraic expressions.
+
+
 [Documentation](https://svungoc.github.io/poly-weyl/index.html) is available.

@@ -8,8 +8,10 @@
 
    The goal is to recognize the mathematical meaning of strings like
 
-   ["1.41+2x+5x^2 + \\sin t^2 + \\frac{A-B}2"]
+      ["1.41+2x+5x^2 + \\sin t^2 + \\frac{A-B}2"]
 
+   (Which renders as {%html:\(1.41+2x+5x^2 + \sin t^2 + \frac{A-B}2\)%}.)
+   
    The resulting expression tree is
 
 {[

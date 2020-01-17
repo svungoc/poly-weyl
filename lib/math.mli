@@ -454,22 +454,24 @@ module RealPoly1 :
     and type scalar = RealNumbers.t
     and type generic = RealPoly.t)
 
-(** {1 Semiclassical Weyl Algebras}
+(** {1 Semiclassical Weyl Algebras} *)
 
- A semiclassical Weyl algebra is a polynomial algebra with variables 
+(** Semiclassical Weyl Algebra
+
+A semiclassical Weyl algebra is a polynomial algebra with variables 
     {%html:\((\hbar, q_1, p_1, q_2, p_2, \dots)\)%}.
-The degree in the [hbar] variable ({%html:\(\hbar\)%}) is 2.
-
-It is a Lie algebra ({!LieAlg}) with the so-called Moyal bracket.
-
-At first order in [ħ], the Moyal bracket reduces to the Poisson bracket.
-The sign convention here is opposite to the formula in the
-{{:https://en.wikipedia.org/wiki/Poisson_bracket} wikipedia page}.
-
-*)
-  
+      The degree in the [hbar] variable ({%html:\(\hbar\)%}) is 2.
+      
+      It is a Lie algebra ({!LieAlg}) with the so-called Moyal bracket.
+      
+      At first order in [ħ], the Moyal bracket reduces to the Poisson bracket.
+      The sign convention here is opposite to the formula in the
+      {{:https://en.wikipedia.org/wiki/Poisson_bracket} wikipedia page}.
+      
+  *)
 module Weyl : sig
 
+  
   module Monomial : sig
     include Monomial.S
     val hbar : t
