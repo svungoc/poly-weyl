@@ -4,6 +4,9 @@ Computer implementation of generic polynomials and semiclassical Weyl algebra
 
 Work in progress...
 
+[Documentation](https://svungoc.github.io/poly-weyl/index.html) is available.
+
+
 ## Module Math (package math-alg)
 
 + Basics algebraic structures:
@@ -43,5 +46,3 @@ Work in progress...
 
 Conversion to/from Latex code for simple algebraic expressions.
 
-
-[Documentation](https://svungoc.github.io/poly-weyl/index.html) is available.

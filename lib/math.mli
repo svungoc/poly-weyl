@@ -260,6 +260,7 @@ module Monomial : sig
        several times, only the last one will be taken into account.  *)
       
     val to_list : t -> (int * int) list
+
     module Compare :
     sig
       type nonrec t = t
@@ -268,7 +269,8 @@ module Monomial : sig
     type names
     (** A variable of type [names] is used to print out the variables. The precise
         type depends on the implementation. *)
-      
+
+    val default_names : names ref
     (* We should not override the original signature of "to_tex" to make sure
        that Polynomial is compatible with Algebra *)
     val to_tex : ?names:names -> t -> string
@@ -343,10 +345,17 @@ module Polynomial : sig
     val diff : monomial -> t -> t
     (** [diff monomial : t -> t] is the differential operator obtained by
        replacing the ieth variable in the monomial by the ieth derivative. *)
+
+    val map : (scalar -> scalar) -> t -> t
+    (** Apply a function on the coefficients of the polynomial. *)
     
     val of_list : (scalar * monomial) list -> t
     (** Create a polynomial by adding all monomials with their given
         coefficients. *)
+
+    val to_list : t -> (scalar * monomial) list
+
+    val default_names : names ref
   end
   
   (** The Polynomial functor *)
@@ -360,11 +369,15 @@ end
 
 (** Polynomials with rational coefficients with arbitrary number of variables *)
 module RatPoly :
-  (Polynomial.S with type monomial = Monomial.Generic.t and type scalar = Rationals.t)
+  (Polynomial.S
+   with type monomial = Monomial.Generic.t
+    and type scalar = Rationals.t)
 
 (** Polynomials with real coefficients with arbitrary number of variables *)
 module RealPoly :
-  (Polynomial.S with type monomial = Monomial.Generic.t and type scalar = RealNumbers.t)  
+  (Polynomial.S
+   with type monomial = Monomial.Generic.t
+    and type scalar = RealNumbers.t)  
 
 (** {3 Polynomials in one variable} *)
 
@@ -375,7 +388,9 @@ module RealPoly :
     The default {!Monomial.S.names} is the string ["x"] *)
 module Polynomial1 : sig
   module type S = sig
-    include Polynomial.S with type names = string and type monomial = Monomial1.t
+    include Polynomial.S
+      with type names = string
+       and type monomial = Monomial1.t
     type generic
     val x : t
     (** The {%html:\(x\)%} polynomial *)
@@ -395,21 +410,6 @@ module Polynomial1 : sig
 
   module Make (R : Ring) : (S with type scalar = R.t (* and type generic = (Polynomial_generic (R).t) *))
 
-  (** {4 Polynomials over polynomials}
-
-      Since polynomials form a ring, one can construct polynomials in two
-      variables as polynomials in one variable over the ring of polynomials in
-      one variable. Namely, one can write fo instance:
-      
-      {[module RatPoly2 = Polynomial1.Make(RatPoly1)]}
-
-      Elements of [RatPoly2] are now polynomials in one variable whose
-      coefficients are polynomials in one variable with rational coefficients; 
-      they can be viewed as polynomials in two variables with 
-      rational coefficients. 
-      In order to distinguish the two variables in LaTeX output, 
-      one should do for instance [RatPoly1.set_default_name "t"].
-  *)
 end
 
 (** Polynomials in one variable with rational coefficients. 
@@ -454,23 +454,87 @@ module RealPoly1 :
     and type scalar = RealNumbers.t
     and type generic = RealPoly.t)
 
+(** {3 Polynomials over polynomials}
+
+      Since polynomials form a ring, one can construct polynomials in two
+   variables as polynomials in one variable over the ring of polynomials in one
+   variable. Namely, one can write fo instance:
+
+      
+      {[module RatPoly2 = Polynomial1.Make(RatPoly1)]}
+
+
+      Elements of [RatPoly2] are now polynomials in one variable whose
+   coefficients are polynomials in one variable with rational coefficients; they
+   can be viewed as polynomials in two variables with rational coefficients.  In
+   order to distinguish the two variables in LaTeX output, one should do for
+   instance [RatPoly1.set_default_name "t"].
+
+      More generally, adding variables can be seen as taking a {e tensor
+   product}. For multivariate polynomials, we provide a convenience functor
+   {!PolyTensor} for the tensor product of a polynomial ring by itself.
+
+  *)
+
+(** Tensor product of polynomials.
+
+    Given two polynomials {%html:\(f(x_1,\dots x_n)\)%} and
+   {%html:\(g(y_1,\dots, y_m)\)%}, the tensor product {%html:\(f(x)\otimes
+   g(y)\)%} is a polynomial in {%html:\((x_1,\dots x_n,y_1,\dots, y_m)\)%}.
+
+    The {!PolyTensor} functor realizes tensor products as polynomials in
+   {%html:\((y_1,\dots, y_m)\)%} whose coefficients are polynomials in
+   {%html:\((x_1,\dots x_n)\)%}.
+
+*)
+module PolyTensor (P : Polynomial.S with type monomial = Monomial.Generic.t) :
+sig
+  include Polynomial.S with type scalar = P.t
+  val tensor : P.t -> P.t -> t
+(** Tensor product {%html:\(f(x)\otimes g(y)\)%}. *)
+
+  val contract : t -> P.t
+  (** Contraction of tensor products on the diagonal {%html:\(x=y\)%}: 
+ 
+      {%html:\[f(x)\otimes g(y) \to f(x)g(x)\]%} 
+
+      In other words [P.equal (tensor f g |> contract) P.(f * g)] is true. *)
+                        
+end
+
 (** {1 Semiclassical Weyl Algebras} *)
 
 (** Semiclassical Weyl Algebra
 
-A semiclassical Weyl algebra is a polynomial algebra with variables 
-    {%html:\((\hbar, q_1, p_1, q_2, p_2, \dots)\)%}.
-      The degree in the [hbar] variable ({%html:\(\hbar\)%}) is 2.
-      
-      It is a Lie algebra ({!LieAlg}) with the so-called Moyal bracket.
-      
-      At first order in [ħ], the Moyal bracket reduces to the Poisson bracket.
-      The sign convention here is opposite to the formula in the
-      {{:https://en.wikipedia.org/wiki/Poisson_bracket} wikipedia page}.
-      
-  *)
+A semiclassical Weyl algebra is a formal deformation of a Poisson algebra. It is
+   a polynomial algebra with variables {%html:\((\hbar, q_1, p_1, q_2, p_2,
+   \dots)\)%}.  The degree in the [hbar] variable ({%html:\(\hbar\)%}) is 2.  It
+   is a Lie algebra ({!LieAlg}) with the so-called Moyal bracket.
+
+    {%html:\[[ f,g ] (q,p , \hbar ) = 2 \sinh \Bigl( \frac{\hbar}{2i} \square
+   \Bigr)\bigl( f ( q, p, \hbar ) g ( q', p', \hbar ) \bigr) \Bigr|_{q=q',\atop
+   p=p'}\]%}
+
+    with the bi-Poisson operator {%html:\[ \square = \sum_{j=1}^n \partial_{p_j}
+   \partial_{q'_j} - \partial_{q_j} \partial_{p'_j} .\]%}
+
+  The sign convention here is opposite to the formula in the
+   {{:https://en.wikipedia.org/wiki/Poisson_bracket} wikipedia page}.  At first
+   order in [ħ], the Moyal bracket reduces to the Poisson bracket:
+
+    {%html:\[[ f,g ] = \frac\hbar{i}\{f,g\} + O(\hbar^3) \]%}
+
+    *)
 module Weyl : sig
 
+  (** A Poisson algebra is both an {!Algebra} and a {!LieAlg}. The Lie bracket
+      is the Poisson bracket {%html:\(\{f,g\}\)%}. We should have
+      {%html:\(\{f,gh\} = g\{f,h\} + \{f,g\}h\)%}
+      (but of course this is not guaranteed by the signature).  *)
+  module type Poisson = sig
+    include Algebra
+    val bracket : t -> t -> t
+  end
   
   module Monomial : sig
     include Monomial.S
@@ -478,11 +542,11 @@ module Weyl : sig
     val qi : int -> t
     val pi : int -> t
   end
+
   
   (** Construct a Weyl algebra over the coefficient ring R.
 
-
- *)
+A module constructed by this function can be used as a {!Poisson}.  *)
   module Make (R : Ring) : sig
     include Polynomial.S with type monomial = Monomial.t and type scalar = R.t
     val hbar : t

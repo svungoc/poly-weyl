@@ -111,19 +111,26 @@ let test_poly1 () =
   print_endline "Polynomial test passed OK."
 
 let () = test_poly1 ()
-    
-module RRPoly = Polynomial1.Make(RatPoly1)
+
+module R1 = RatPoly1
+module R2 = Polynomial1.Make(RatPoly1)
     
 let test_names () =
   print_endline "\nConstruct polynomials over polynomials and change variable \
                  names:";
-  RatPoly1.set_default_name "R";
-  RRPoly.set_default_name "T";
-  let y = RatPoly1.x in
-  let xy = RRPoly.scal_mul y RRPoly.x in
-  let z = RRPoly.(xy * xy * x) in
-  RRPoly.to_tex z
-  |> check_string "R^2T^3";
+  R1.set_default_name "t";
+  let t = R1.x in
+  let x = R2.x in
+  let tx = R2.scal_mul t x in
+  let z = R2.(tx * tx * x) in
+  R2.to_tex z
+  |> check_string "t^2x^3";
+  let t1 = R1.(t+one) in
+  let x1 = R2.(x+one) in
+  let p = R2.scal_mul t1 x1 in
+  Printf.sprintf "(%s)(%s) = %s" (R1.to_tex t1) (R2.to_tex x1)
+    (R2.to_tex p) |> print_endline;
+  assert (R2.(p == one + of_scalar t + x + tx));
   print_endline "test_names OK."
 
 let () = test_names ()

@@ -10,7 +10,7 @@
 
       ["1.41+2x+5x^2 + \\sin t^2 + \\frac{A-B}2"]
 
-   (Which renders as {%html:\(1.41+2x+5x^2 + \sin t^2 + \frac{A-B}2\)%}.)
+   (Which LaTeX renders as {%html:\(1.41+2x+5x^2 + \sin t^2 + \frac{A-B}2\)%}.)
    
    The resulting expression tree is
 

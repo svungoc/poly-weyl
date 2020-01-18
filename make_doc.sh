@@ -20,6 +20,6 @@ done
 #sed -i "s| ($package.$module)||g" docs/index.html
 #cp ./_build/default/_doc/_html/odoc.css docs/
 #cp _build/default/_doc/_html/highlight.pack.js docs/
-echo "header nav {display: none;} header nav.toc {display: block;} header dl dd, header dl dt {display: inline-block;} " >>  docs/odoc.css
+#echo "header nav {display: none;} header nav.toc {display: block;} header dl dd, header dl dt {display: inline-block;} " >>  docs/odoc.css
 
 echo "Done"
