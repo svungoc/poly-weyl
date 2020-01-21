@@ -309,10 +309,10 @@ end
 
     A module of type [Polynomial] can be used as an {!Algebra}.
  *)
-module Polynomial : sig
+module Polynomial (MM : Monomial.S) : sig
   module type S = sig
     include Algebra
-    type monomial
+    type monomial = MM.t
     val degree : t -> int option
     (** Degree of a non-zero polynomial, or None for the zero polynomial. *)
 
@@ -359,25 +359,23 @@ module Polynomial : sig
   end
   
   (** The Polynomial functor *)
-  module Make (M : Monomial.S) (R : Ring) :
-    (S with type monomial = M.t and type scalar = R.t)
+  module Make (R : Ring) :
+    (S with type scalar = R.t)
     
-  (** Generic polynomials with arbitrary number of variables *)
-  module Generic (R : Ring) :
-    (S with type monomial = Monomial.Generic.t and type scalar = R.t)
 end
 
+(* (\** Generic polynomials with arbitrary number of variables *\)
+ * module PolyGeneric : sig
+ *   include (Polynomial(Monomial.Generic).S)
+ * end *)
+    
 (** Polynomials with rational coefficients with arbitrary number of variables *)
 module RatPoly :
-  (Polynomial.S
-   with type monomial = Monomial.Generic.t
-    and type scalar = Rationals.t)
+  (Polynomial(Monomial.Generic).S with type scalar = Rationals.t)
 
 (** Polynomials with real coefficients with arbitrary number of variables *)
 module RealPoly :
-  (Polynomial.S
-   with type monomial = Monomial.Generic.t
-    and type scalar = RealNumbers.t)  
+  (Polynomial(Monomial.Generic).S with type scalar = RealNumbers.t)
 
 (** {3 Polynomials in one variable} *)
 
@@ -388,9 +386,8 @@ module RealPoly :
     The default {!Monomial.S.names} is the string ["x"] *)
 module Polynomial1 : sig
   module type S = sig
-    include Polynomial.S
+    include Polynomial(Monomial1).S
       with type names = string
-       and type monomial = Monomial1.t
     type generic
     val x : t
     (** The {%html:\(x\)%} polynomial *)
@@ -429,8 +426,7 @@ should print:
 *)
 module RatPoly1 :
   (Polynomial1.S
-   with type monomial = Monomial1.t
-    and type scalar = Rationals.t
+   with type scalar = Rationals.t
     and type generic = RatPoly.t)
    
 (** Polynomials in one variable with real (float) coefficients. 
@@ -450,8 +446,7 @@ should print:
 *)
 module RealPoly1 :
   (Polynomial1.S
-   with type monomial = Monomial1.t
-    and type scalar = RealNumbers.t
+   with type scalar = RealNumbers.t
     and type generic = RealPoly.t)
 
 (** {3 Polynomials over polynomials}
@@ -487,9 +482,9 @@ module RealPoly1 :
    {%html:\((x_1,\dots x_n)\)%}.
 
 *)
-module PolyTensor (P : Polynomial.S with type monomial = Monomial.Generic.t) :
+module PolyTensor (P : Polynomial(Monomial.Generic).S) :
 sig
-  include Polynomial.S with type scalar = P.t
+  include Polynomial(Monomial.Generic).S with type scalar = P.t
   val tensor : P.t -> P.t -> t
 (** Tensor product {%html:\(f(x)\otimes g(y)\)%}. *)
 
@@ -548,7 +543,7 @@ module Weyl : sig
 
 A module constructed by this function can be used as a {!Poisson}.  *)
   module Make (R : Ring) : sig
-    include Polynomial.S with type monomial = Monomial.t and type scalar = R.t
+    include Polynomial(Monomial).S with type scalar = R.t
     val hbar : t
 
     val qi : int -> t
@@ -556,13 +551,16 @@ A module constructed by this function can be used as a {!Poisson}.  *)
       
     val pi : int -> t
     (** The {%html:\(p_i\)%} coordinate. *)
+
+    val dof : t -> int
+    (** Number of degrees of freedom *)
     
     val poisson : t -> t -> t
-      (** The Poisson bracket:
+    val poisson2 : t -> t -> t
+    (** The Poisson bracket:
           {%html:\[
             \{f,g\} = \sum_{i=1}^n \left(\frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i} - \frac{\partial f}{\partial q_i}\frac{\partial g}{\partial p_i}\right).\]%}
-*)
-      
+    *)
   end
 end
 

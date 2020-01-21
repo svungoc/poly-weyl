@@ -148,6 +148,18 @@ let test_latex () =
     print_endline "test_latex OK"
 
 let () = test_latex ()
-    
+
+
+module W = Weyl.Make(Rationals);;
+
 let test_weyl () =
-  ()
+  let f = W.pi 1 in
+  let g = W.qi 1 in
+  assert (W.(poisson f g == poisson2 f g));
+  Printf.sprintf "{%s,%s} = %s"
+    (W.to_tex f) (W.to_tex g)
+    W.(poisson f g |> to_tex)
+  |> check_string "{p_1,q_1} = 1";
+  print_endline "test_weyl OK"
+
+let () = test_weyl ()

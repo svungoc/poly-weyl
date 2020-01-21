@@ -33,6 +33,7 @@ Work in progress...
 	- arbitrary number of variables
 	- special implementation for one variable
 	- usual operations: addition, multiplication, integer power, derivation
+	- tensor products
 	- printing via conversion to LaTeX
 	- display formula in browser or PDF (via the *Latex* module)
 

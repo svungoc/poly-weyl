@@ -13,7 +13,8 @@ let (|?>) o f = match o with
   | Some o -> Some (f o)
             
 (* let round (f:float) = int_of_float (floor (f +. 0.5)) *)
-
+let int_max a b : int = max a b
+  
 (* Multiplicative group  *)
 module type Group = sig
   type t
@@ -602,12 +603,17 @@ end
    coefficients. A monomial of a specific degree should appear only once: x + x
    ==> 2x, hence the "sum" can be replaced by a "Set". *)
 
-module Polynomial = struct
+let int_of_degree = function
+  | None -> raise
+              (Invalid_argument "int_of_degree : expected nonzero polynomial")
+  | Some i -> i
+
+module Polynomial (MM : Monomial.S) = struct
 
   (* The minimal signature for Polynomials *)
   module type S = sig
     include Algebra
-    type monomial
+    type monomial = MM.t
     val degree : t -> int option
     val idegree : int -> t -> int option
     val imax : t -> int option
@@ -624,12 +630,12 @@ module Polynomial = struct
   end
 
   (* The functor to implement general Polynomials *)
-  module Make (M : Monomial.S) (R : Ring) = struct
-    module Mmap = Map.Make (M.Compare)
+  module Make (R : Ring) = struct
+    module Mmap = Map.Make (MM.Compare)
     type t = R.t Mmap.t
     (* to each mononial we associate its (non-zero) coefficient *)
         
-    type monomial = M.t
+    type monomial = MM.t
     type scalar = R.t
                     
     let zero = Mmap.empty
@@ -641,21 +647,22 @@ module Polynomial = struct
     let degree p =
       Mmap.max_binding_opt p
       |?> fst
-      |?> M.degree
+      |?> MM.degree
 
     let idegree i p =
       if is_zero p then None
-      else let d = Mmap.fold (fun m _ -> max (M.exponent i m)) p min_int in
+      else let d = Mmap.fold (fun m _ ->
+          int_max (MM.exponent i m)) p min_int in
         Some d
 
     let imax p =
       if is_zero p then None
       else let i = Mmap.fold (fun m _ ->
-          max (Iset.max_elt (M.support m))) p min_int in
+          int_max (Iset.max_elt (MM.support m))) p min_int in
         Some i
       
     let const c =
-      let m = M.one in
+      let m = MM.one in
       Mmap.singleton m c
         
     let of_scalar = const
@@ -673,7 +680,7 @@ module Polynomial = struct
       Mmap.singleton m R.one
         
     let xi i =
-      of_monomial (M.xi i)
+      of_monomial (MM.xi i)
         
     let add_monomial m c p =
       let c =
@@ -683,9 +690,9 @@ module Polynomial = struct
       Mmap.add m c p
 
     let deriv_monomial i m =
-      match M.exponent i m with
+      match MM.exponent i m with
       | 0 -> None
-      | a -> let m' = M.(m / (xi i)) in
+      | a -> let m' = MM.(m / (xi i)) in
         Some (m', R.of_int a) 
 
     (* [partial i] is the same as [diff (M.xi i)] *)
@@ -698,7 +705,7 @@ module Polynomial = struct
 
     (* Easy to write but probably not the fastest implementation *)
     let diff m p =
-      Iset.fold partial (M.support m) p
+      Iset.fold partial (MM.support m) p
 
     (* map is different from Mmap.map in that zero monomials should be
        deleted. If f never returns zero, it is equivalent to Mmap.map. *)
@@ -716,7 +723,7 @@ module Polynomial = struct
                   |> List.map (fun (a,b) -> (b,a))
         
     let monomial_mul mon p =
-      Mmap.fold (fun m -> Mmap.add (M.mul mon m)) p zero
+      Mmap.fold (fun m -> Mmap.add (MM.mul mon m)) p zero
         
     let scal_mul s p =
       if R.is_zero s then zero
@@ -746,8 +753,12 @@ module Polynomial = struct
        *   if n mod 2 = 0 then pp
        *   else mul p pp *)
 
-    type names = M.names
-    let default_names = ref (!M.default_names)
+    type names = MM.names
+    (* We need to make sure that if the user modifies the default_names of a
+       created Polynomial module, it has priority over the default_names of the
+       underlying Monomial module, but it should not modify the latter ---
+       because the latter can be used to define another Polynomial module. *)
+    let default_names = ref (!MM.default_names)
                           
     let of_tex _ = raise Not_implemented
     let to_tex ?(names = !default_names)  p =
@@ -755,16 +766,16 @@ module Polynomial = struct
       else let b = Buffer.create (Mmap.cardinal p * 50) in
         Mmap.iter (let start = ref true in fun m c ->
             if !start then start := false else Buffer.add_string b " + ";
-            if c <> R.one || m = M.one (* print the coeff only if it's not 1 *) 
+            if c <> R.one || m = MM.one (* print the coeff only if it's not 1 *) 
             then begin
               let coeff = R.to_tex c in
-              if m = M.one || (not (String.contains coeff ' '))
+              if m = MM.one || (not (String.contains coeff ' '))
               then Buffer.add_string b coeff
               else Buffer.add_string b ("(" ^ coeff ^ ")")
               (* TODO do better with a customizable "needs_parenthesis"
                    function*)
             end;
-            Buffer.add_string b (M.to_tex ~names m)) p;
+            Buffer.add_string b (MM.to_tex ~names m)) p;
         Buffer.contents b 
         
     let (+) = add
@@ -776,13 +787,13 @@ module Polynomial = struct
   module Check_Polynomial_Algebra (P:S) : Algebra = struct
     include P
   end
-
-  module Generic (R : Ring) = Make (Monomial.Generic) (R)
 end
 
+module PolyGeneric = Polynomial(Monomial.Generic)
+    
 module Polynomial1 = struct
   module type S = sig
-    include Polynomial.S with type names = string and type monomial = Monomial1.t
+    include Polynomial(Monomial1).S with type names = string
     type generic
     val x : t
     val of_array : scalar array -> t
@@ -791,8 +802,9 @@ module Polynomial1 = struct
   end
   
   module Make (R : Ring) = struct
-    include Polynomial.Make (Monomial1) (R)
-    module PG = Polynomial.Generic (R)
+    module PM = Polynomial(Monomial1)
+    include PM.Make(R)
+    module PG = PolyGeneric.Make(R)
     type generic = PG.t
                      
     let x = of_monomial Monomial1.x
@@ -821,22 +833,31 @@ module Polynomial1 = struct
 
 end
 
-module RatPoly = Polynomial.Generic (Rationals)
-module RealPoly = Polynomial.Generic (RealNumbers)
+module RatPoly = PolyGeneric.Make (Rationals)
+module RealPoly = PolyGeneric.Make (RealNumbers)
 module RatPoly1 = Polynomial1.Make (Rationals)
 module RealPoly1 = Polynomial1.Make (RealNumbers)
 
-module Check_RatPoly1_Poly : Polynomial.S with type scalar = Rationals.t = struct
+module Check_RatPoly1_Poly : Polynomial(Monomial1).S with type scalar = Rationals.t = struct
   include RatPoly1
 end
 
-module PolyTensor (P : Polynomial.S with type monomial = Monomial.Generic.t) =
+module PolyTensor (P : PolyGeneric.S) =
 struct
-  include Polynomial.Generic (P)
+  include PolyGeneric.Make (P)
+      
+  let () = print_endline "USING POLYTENSOR FUNCTOR"
+      
   let () = default_names := (fun i ->
     Some (if i < 10 then "y_" ^ (string_of_int i)
           else "y_{" ^ (string_of_int i) ^ "}"))
 
+  (* Total degree *)
+  let degree p =
+    if is_zero p then None else
+    let df = Mmap.fold (fun _ c -> int_max (P.degree c |> int_of_degree)) p 0 in
+    Some Int.(df + (degree p |> int_of_degree))
+    
   let x_to_y (p : P.t) : t =
     P.to_list p
     |> List.map (fun (c,m) -> (P.const c, m))
@@ -886,21 +907,30 @@ module Weyl = struct
       | 1 -> hbar_s
       | n when n mod 2 = 0 -> q_s ^ "_" ^ (string_of_int (n lsr 1))
       | n -> p_s ^ "_" ^ (string_of_int (n lsr 1))
-                         
-    let to_tex ?names s =
-      let names = match names with
-        | Some f -> f
-        | None -> fun s -> Some (name hbar_string q_string p_string s) in
-      to_tex ~names s
+
+        
+    (* let to_tex ?names s =
+     *   let names = match names with
+     *     | Some f -> f
+     *     | None -> fun s -> Some (name hbar_string q_string p_string s) in
+     *   to_tex ~names s *)
         
     (* The degree in hbar counts twice *)
     let degree m =
       I.(degree m + exponent 1 m)
   end
-  
+
+  module PolyWeyl = Polynomial(Monomial)
+      
   module Make (R : Ring) = struct
-    module P = Polynomial.Make (Monomial) (R)
+    
+    module P = PolyWeyl.Make (R)
     include P
+
+    let () = print_endline "USING WEYL FUNCTOR"
+        
+    let () = default_names :=
+        (fun s -> Some (Monomial.(name hbar_string q_string p_string) s))
 
     (* degrees of freedom *)
     let dof f = match imax f with
@@ -924,7 +954,34 @@ module Weyl = struct
 
     module T = PolyTensor(P)
 
-    let bi_poisson ff gg = ()
+    (* apply partial on the f(x) part (the coefficients) *)
+    let partial1 i (ff : T.t) : T.t =
+      T.map (P.partial i) ff 
+
+    (* on a tensor product \sum f⊗g, return the max number of degrees of freedom
+       of all f's and g's *)
+    let bi_dof t =
+      let df = t |> T.to_list
+               |> List.map fst
+               |> List.map dof
+               |> List.fold_left int_max 0 in
+      int_max df (dof t)
+        
+    (* acts on a tensor product *)
+    let bi_poisson (t : T.t) : T.t =
+      let open T in
+      if is_zero t then zero
+      else let n = bi_dof t in
+        let rec loop i acc =
+          if i > n then acc
+          else let tt = acc + (partial1 I.(2*i+1) t |> partial I.(2*i))
+                        - (partial1 I.(2*i) t |> partial I.(2*i+1))
+            in loop I.(i+1) tt in
+        loop 1 zero
+
+    (* this should be the same as poisson *)
+    let poisson2 f g =
+      T.tensor f g |> bi_poisson |> T.contract
   end
 end
 
