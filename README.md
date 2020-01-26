@@ -41,7 +41,8 @@ Work in progress...
 
 	- Canonical variables (q,p) and semiclassical parameter ħ
 	- Poisson bracket
-	- ... TODO
+	- Moyal bracket
+	- TODO: Birkhoff normal forms
 
 ## Module Latex (package math-latex)
 

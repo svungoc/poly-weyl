@@ -233,6 +233,9 @@ module Monomial : sig
     val support : t -> Iset.t
     (** [support m] is the list of indices of [m] with non-zero exponents *)
 
+    val imax : t -> int option
+    (** Max index [i] of variables {%html:\(x_i\)%} in the mononial, or None. *)
+        
     val exponent : int -> t -> int
     (** [exponent i m] is the exponent of the [i]-eth variable. *)
                          
@@ -322,7 +325,7 @@ module Polynomial (MM : Monomial.S) : sig
     val imax : t -> int option
     (** Maximum index [i] of variables {%html:\(x_i\)%} appearing in the
        polynomial.  If [n = imax p] then [p] can be seen as a polynomial in
-       {%html:\((x_0,\dots,x_n)\)%}.  Returns [None] if [p] is zero.*)
+       {%html:\((x_0,\dots,x_n)\)%}.  Returns [None] if [p] is zero or one.*)
     
     val const : scalar -> t
     (** Constant polynomials *)
@@ -506,11 +509,11 @@ A semiclassical Weyl algebra is a formal deformation of a Poisson algebra. It is
    \dots)\)%}.  The degree in the [hbar] variable ({%html:\(\hbar\)%}) is 2.  It
    is a Lie algebra ({!LieAlg}) with the so-called Moyal bracket.
 
-    {%html:\[[ f,g ] (q,p , \hbar ) = 2 \sinh \Bigl( \frac{\hbar}{2i} \square
+    {%html:\[[ f,g ] (q,p , \hbar ) = 2 \sinh \Bigl( \frac{\hbar}{2i} \Pi
    \Bigr)\bigl( f ( q, p, \hbar ) g ( q', p', \hbar ) \bigr) \Bigr|_{q=q',\atop
    p=p'}\]%}
 
-    with the bi-Poisson operator {%html:\[ \square = \sum_{j=1}^n \partial_{p_j}
+    with the bi-Poisson operator {%html:\[ \Pi = \sum_{j=1}^n \partial_{p_j}
    \partial_{q'_j} - \partial_{q_j} \partial_{p'_j} .\]%}
 
   The sign convention here is opposite to the formula in the
@@ -539,11 +542,11 @@ module Weyl : sig
   end
 
   
-  (** Construct a Weyl algebra over the coefficient ring R.
+  (** Construct a Weyl algebra over the field F.
 
 A module constructed by this function can be used as a {!Poisson}.  *)
-  module Make (R : Ring) : sig
-    include Polynomial(Monomial).S with type scalar = R.t
+  module Make (F : Field) : sig
+    include Polynomial(Monomial).S with type scalar = F.t
     val hbar : t
 
     val qi : int -> t
@@ -551,16 +554,39 @@ A module constructed by this function can be used as a {!Poisson}.  *)
       
     val pi : int -> t
     (** The {%html:\(p_i\)%} coordinate. *)
-
-    val dof : t -> int
-    (** Number of degrees of freedom *)
     
     val poisson : t -> t -> t
     val poisson2 : t -> t -> t
     (** The Poisson bracket:
           {%html:\[
-            \{f,g\} = \sum_{i=1}^n \left(\frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i} - \frac{\partial f}{\partial q_i}\frac{\partial g}{\partial p_i}\right).\]%}
+            \{f,g\} = \sum_{i=1}^n 
+        \left(\frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i} 
+        - \frac{\partial f}{\partial q_i}\frac{\partial g}{\partial p_i}\right).
+        \]%}
     *)
+
+    val moyal : t -> t -> t
+    (** [moyal f g] is the Weyl deformation of the Poisson bracket. 
+        It is equal to {%html:\(i/\hbar\)%} times the Moyal bracket 
+        of [f] and [g] (not the Moyal product):
+
+          {%html:\[
+        \frac{i}{\hbar}[ f,g ] (q,p , \hbar ) = \Delta^* 
+        \sum_{k\geq 0} (-1)^{k} 
+        \frac{\hbar^{2k}}{2^{2k} (2k+1)!}
+        \Pi^{2k+1} (f\otimes g) 
+        = \{f,g\} + O(\hbar^3) ,
+        \]%}
+
+        where {%html:\(\Pi\)%} is the bi-Poisson operator 
+        and {%html:\(\Delta^*\)%} is the contraction operator
+        ({!PolyTensor.contract}). 
+        See also the 
+        {{:https://en.wikipedia.org/wiki/Moyal_bracket}wikipedia page}, 
+        but the sign convention there is opposite.
+
+        We don't define the Moyal star product here, 
+        because it requires complex coefficients. See the {!CWeyl} module. *)
   end
 end
 

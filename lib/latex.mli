@@ -124,7 +124,8 @@ val parse : string -> expr
 
 (** {3 Customization}
 
-    You can modify these variables to taylor the parsing to your needs. In the
+    You can modify these variables to taylor the parsing to your needs
+   (currently you need to modify their definition in the source code). In the
    string lists, LaTeX command are written without the initial backslash.  *)
 
 val float_separator : char

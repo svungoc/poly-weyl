@@ -160,6 +160,9 @@ let test_weyl () =
     (W.to_tex f) (W.to_tex g)
     W.(poisson f g |> to_tex)
   |> check_string "{p_1,q_1} = 1";
+  W.moyal f g |> W.to_tex |> check_string "1";
+  W.(moyal (f*f*g) (g*g*g*f*f) |> to_tex) |> print_endline;
+  (* ==> à vérifier *)
   print_endline "test_weyl OK"
 
 let () = test_weyl ()

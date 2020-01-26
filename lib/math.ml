@@ -5,6 +5,8 @@
 (* IRMAR, Université de Rennes 1 *)
 (* Institut Universitaire de France *)
 
+let pf = Printf.sprintf
+           
 exception Not_implemented
 
 (* map an option *)
@@ -14,7 +16,15 @@ let (|?>) o f = match o with
             
 (* let round (f:float) = int_of_float (floor (f +. 0.5)) *)
 let int_max a b : int = max a b
-  
+let int_min a b : int = min a b
+
+(* None is considered as minus infinity *)
+let max_opt : int option -> int option -> int option = function
+  | None -> fun x -> x
+  | Some a -> function
+    | None -> Some a
+    | Some b -> Some (int_max a b)
+
 (* Multiplicative group  *)
 module type Group = sig
   type t
@@ -242,7 +252,7 @@ module RealNumbers = struct
   let of_float x = x
   type names = unit
   let of_tex = float_of_string
-  let to_tex ?names x = ignore names; Printf.sprintf "%.15g" x
+  let to_tex ?names x = ignore names; pf "%.15g" x
   let (+) = add
   let (-) = sub
   let ( * ) = mul
@@ -260,9 +270,9 @@ module ComplexNumbers = struct
   (* let of_string s = { re=float_of_string s; im=0. } (\* TODO imaginary part *\)
    * let string z = 
    *   let real_is_zero f = abs_float f < 10. *. epsilon_float in
-   *   if real_is_zero z.im then Printf.sprintf "%g" z.re
-   *   else if real_is_zero z.re then Printf.sprintf "%g i" z.im
-   *   else Printf.sprintf "(%g + %g i)" z.re z.im
+   *   if real_is_zero z.im then pf "%g" z.re
+   *   else if real_is_zero z.re then pf "%g i" z.im
+   *   else pf "(%g + %g i)" z.re z.im
    * let latex = string *)
 
   let pow n z = pow z (of_int n)
@@ -279,7 +289,7 @@ module ComplexNumbers = struct
   type names = unit
   let to_tex ?names z =
     ignore names;
-    Printf.sprintf "(%s + %s i)"
+    pf "(%s + %s i)"
       (RealNumbers.to_tex z.re) (RealNumbers.to_tex z.im)
   let of_tex _ = raise Not_implemented
   let ( * ) = mul
@@ -326,8 +336,8 @@ module ComplexField (F : Field) = struct
     ignore names;
     let fn = F.to_tex in
     if F.is_zero z.im then fn z.re
-    else if F.is_zero z.re then Printf.sprintf "%s i" (fn z.im)
-    else Printf.sprintf "(%s + %s i)" (fn z.re) (fn z.im)
+    else if F.is_zero z.re then pf "%s i" (fn z.im)
+    else pf "(%s + %s i)" (fn z.re) (fn z.im)
  
   let i = { re = F.zero; im = F.one }
   let mi = { re = F.zero; im = F.of_int (-1) }
@@ -363,8 +373,10 @@ module Imap = Map.Make(IntOrder)
 module Iset = Set.Make(IntOrder)
   
 module Monomial = struct
-(* Abstract monomial: x_1^{a_1}··· x_n^{a_n} where x_j are formal indeterminates
-   and a_j are integers. *)
+  (* Abstract monomial: x_1^{a_1}··· x_n^{a_n} where x_j are formal
+     indeterminates and a_j are integers. A monomial can NEVER be
+     zero. (mononials form a multiplicative group. In additive notation, the
+     monomial X^0 = "one" is ALSO denoted "zero". )*)
 
   (* minimal signature for Monomials *)
   module type S = sig
@@ -372,6 +384,7 @@ module Monomial = struct
     val one : t
     val degree : t -> int
     val support : t -> Iset.t
+    val imax : t -> int option
     val exponent : int -> t -> int 
     val xi : int -> t
     val xin : int -> int -> t
@@ -416,7 +429,11 @@ module Monomial = struct
         Iset.add i set) map Iset.empty
         
     let support m = m.support
-                      
+
+    let imax m =
+      if is_zero m then None
+      else Some (Iset.max_elt m.support)
+          
     let xin i n =
       assert (i>=0);
       let map = Imap.singleton i n in
@@ -517,8 +534,8 @@ module Monomial = struct
           if !start then start := false else Buffer.add_char b ' ';
           Buffer.add_string b
             (if a = 1 then name
-             else if abs a < 10 then Printf.sprintf "%s^%i" name a
-             else Printf.sprintf "%s^{%i}" name a)) m.map;
+             else if abs a < 10 then pf "%s^%i" name a
+             else pf "%s^{%i}" name a)) m.map;
       Buffer.contents b 
         
     let of_tex _ = raise Not_implemented
@@ -542,6 +559,10 @@ module Monomial1 = struct
   let support = function
     | 0 -> Iset.empty
     | _ -> Iset.singleton 0
+
+  let imax = function
+    | 0 -> None
+    | _ -> Some 1
              
   let check_1D_first next = function
     | 0 -> next
@@ -657,9 +678,8 @@ module Polynomial (MM : Monomial.S) = struct
 
     let imax p =
       if is_zero p then None
-      else let i = Mmap.fold (fun m _ ->
-          int_max (Iset.max_elt (MM.support m))) p min_int in
-        Some i
+      else Mmap.fold (fun m _ ->
+          max_opt (MM.imax m)) p None 
       
     let const c =
       let m = MM.one in
@@ -922,9 +942,9 @@ module Weyl = struct
 
   module PolyWeyl = Polynomial(Monomial)
       
-  module Make (R : Ring) = struct
+  module Make (F : Field) = struct
     
-    module P = PolyWeyl.Make (R)
+    module P = PolyWeyl.Make (F)
     include P
 
     let () = print_endline "USING WEYL FUNCTOR"
@@ -932,8 +952,10 @@ module Weyl = struct
     let () = default_names :=
         (fun s -> Some (Monomial.(name hbar_string q_string p_string) s))
 
-    (* degrees of freedom *)
-    let dof f = match imax f with
+    (* degrees of freedom (polymorphic) *)
+        (* BUG ""dof one"" *)
+    let dof f =
+      match imax f with
       | None -> 0
       | Some i -> i/2
 
@@ -958,20 +980,21 @@ module Weyl = struct
     let partial1 i (ff : T.t) : T.t =
       T.map (P.partial i) ff 
 
-    (* on a tensor product \sum f⊗g, return the max number of degrees of freedom
+    (* on a tensor product \sum f⊗g, return the min number of degrees of freedom
        of all f's and g's *)
-    let bi_dof t =
+    let min_dof t =
       let df = t |> T.to_list
                |> List.map fst
                |> List.map dof
                |> List.fold_left int_max 0 in
-      int_max df (dof t)
+      int_min df (dof t)
         
     (* acts on a tensor product *)
     let bi_poisson (t : T.t) : T.t =
       let open T in
       if is_zero t then zero
-      else let n = bi_dof t in
+      else let n = min_dof t in
+        let () = pf "Bi-Poisson, DOF=%i" n |> print_endline in
         let rec loop i acc =
           if i > n then acc
           else let tt = acc + (partial1 I.(2*i+1) t |> partial I.(2*i))
@@ -982,6 +1005,25 @@ module Weyl = struct
     (* this should be the same as poisson *)
     let poisson2 f g =
       T.tensor f g |> bi_poisson |> T.contract
+
+    (* let () = T.one |> min_dof |> ignore *)
+             
+    let moyal f g =
+      let hsq = hbar * hbar in
+      let rec loop n t acc =
+        if T.is_zero t then acc
+        else let coeff = (* the coefficient of the Sine Taylor Series. n loops
+                            over odd integers starting from n=3. *)
+               F.(mone / of_int Int.(4*n*(n-1))) in
+          (* TODO "of_Z" would be better *)
+          let c = P.(scal_mul coeff hsq) in
+          let t = bi_poisson t |> bi_poisson |> T.scal_mul c in
+          (* we apply (bi_poisson)² *)
+          loop Int.(n+2) t T.(acc + t) in
+      let fg = T.tensor f g |> bi_poisson in
+      loop 3 fg fg
+      |> T.contract
+        
   end
 end
 
