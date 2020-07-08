@@ -22,16 +22,16 @@ module type Group = sig
   type t
   val one : t
   (** The group unit. *)
-    
+
   val inv : t -> t
   (** Multiplicative inverse. *)
 
   val mul : t -> t -> t
   (** Group multiplication. Not necessarily abelian. *)
-  
+
   val ( * ) : t -> t -> t
   (** Group multiplication (infix). *)
-    
+
   val div : t -> t -> t
   val ( / ) : t -> t -> t
   (** [div a b] is [mul a (inverse b)]. *)
@@ -45,7 +45,7 @@ module type AbelianGroup = sig
   type t
   val zero : t
   (** Neutral element for addition. *)
-  
+
   val is_zero : t -> bool
   val neg : t -> t
   val add : t -> t -> t
@@ -71,13 +71,13 @@ module type Rng = sig
 end
 
 (** Rings with unit
-    
+
     A module of type [Ring] can be used as a {!Rng}. *)
 module type Ring = sig
   include Rng
   val one : t
   (** Ring unit element. *)
-  
+
   val mone : t
   (** minus one. *)
 
@@ -85,11 +85,11 @@ module type Ring = sig
   type names
   (** If the type {!names} remains private, it means it has no use in the current
      module implementation. *)
-  
+
   val to_tex : ?names:names -> t -> string
   val of_tex : string -> t
 end
-  
+
 (** Commutative fields
 
     A module of type [Field] can be used as a {!Ring}, or as a {!Group}. *)
@@ -97,14 +97,14 @@ module type Field = sig
   include Ring
   val inv : t -> t
   (** Field inverse. Will raise [Division_by_zero] on the zero element. *)
-  
+
   val div : t -> t -> t
   val ( / ) : t -> t -> t
   (** Can raise [Division_by_zero]. *)
-  
+
   val of_float : float -> t
   (** Try to create an element of the Field from the given float. *)
-    
+
 end
 
 (** {2 Modules and Vector Spaces} *)
@@ -116,20 +116,20 @@ module type Module = sig
   type scalar
   (** The scalar type should in principle include [Rng.t], but this signature
      does not enforce it here. *)
-    
+
   include AbelianGroup
   val scal_mul : scalar -> t -> t
 end
 
 (** Vector spaces over a field
 
-    A module of type [VSpace] can be used as an {!AbelianGroup}.  
-    [VSpace] is simply an alias to {!Module}; 
+    A module of type [VSpace] can be used as an {!AbelianGroup}.
+    [VSpace] is simply an alias to {!Module};
     it can be used when the scalar ring is a field.  *)
 module type VSpace = Module
 
 (** {2 Algebras and Lie Algebras} *)
-  
+
 (** Algebras over a ring, with unit
 
     A module of type [Algebra] can be used as a {!Module}, or as a {!Ring}.  It
@@ -138,7 +138,7 @@ module type VSpace = Module
 module type Algebra = sig
   type scalar
   (** Type of the scalar Ring. *)
-    
+
   include Ring
   val of_scalar : scalar -> t
   (** [of_scalar s] is [scal_mul s one] *)
@@ -184,7 +184,7 @@ module ComplexNumbers : sig
   val mone : t
 end
 
-(** Complexification of a field 
+(** Complexification of a field
 
 For instance, [ComplexNumbers] is equivalent to [ComplexField (RealNumbers)].
 *)
@@ -205,11 +205,11 @@ module AlgebraOfField (F : Field) :
 
     Monomials are the building bricks of Polynomials, but it is rarely necessary
    to access them directly.  *)
-  
+
 (** Sets of integers *)
 module Iset : (Set.S with type elt = int)
 (* module Imap : (Map.S with type key = int) *)
-              
+
 (** Abelian group of abstract monomial in arbitrary number of coordinates.
 
     A monomial represents {%html:\(x_0^{a_0}··· x_n^{a_n}\)%} where
@@ -226,7 +226,7 @@ module Monomial : sig
     include AbelianGroup
     val one : t
     (** The constant mononial 1; same as [zero], in additive notation. *)
-      
+
     val degree : t -> int
     (** Total degree *)
 
@@ -235,33 +235,33 @@ module Monomial : sig
 
     val imax : t -> int option
     (** Max index [i] of variables {%html:\(x_i\)%} in the mononial, or None. *)
-        
+
     val exponent : int -> t -> int
     (** [exponent i m] is the exponent of the [i]-eth variable. *)
-                         
+
     val xi : int -> t
     (** [xi i] is the monomial {%html:\(x_i\)%} *)
-      
+
     val xin : int -> int -> t
     (** [xin i n] is the monomial {%html:\(x_i^n\)%} *)
-      
+
     val mul : t -> t -> t
     val ( * ) : t -> t -> t
     (** multiplication of two monomials; same as addition of exponents. *)
-      
+
     val div : t -> t -> t
     val (/) : t -> t -> t
     (** [div m1 m2] is the division of [m1] by [m2]. This can produce negative
         exponents. Same as substraction of exponents. *)
-      
+
     val imul : int -> t -> t
     (** [imul i m] is [m] muliplied by {%html:\(x_i\)%} *)
-      
+
     val of_list : (int * int) list -> t
     (** Create a monomial {%html:\(x_{i_1}^{a_1}x_{i_2}^{a_2}\dots\)%} from a
        list of the form [[(i1,a1); (i2,a2), ...]]. If the same index i appears
        several times, only the last one will be taken into account.  *)
-      
+
     val to_list : t -> (int * int) list
 
     module Compare :
@@ -279,9 +279,9 @@ module Monomial : sig
     val to_tex : ?names:names -> t -> string
     val of_tex : string -> t
   end
-  
-  (** Generic implementation of monomials 
-      
+
+  (** Generic implementation of monomials
+
       The default {!Monomial.S.names} is the map i => {%html:\(x_i\)%}.
   *)
   module Generic : (S with type names = int -> string option)
@@ -297,13 +297,13 @@ module Monomial1 : sig
 
   val xn : int -> t
   (** The {%html:\(x^n\)%} monomial *)
-    
+
   val to_generic : int -> t -> Monomial.Generic.t
   (** [to_generic i m] transforms the 1D monomial [m] into a generic
       monomial where the original variable is replaced by {%html:\(x_i\)%}. *)
 
   val set_default_name : names -> unit
-    
+
 end
 
 (** {2 Polynomials} *)
@@ -326,17 +326,17 @@ module Polynomial (MM : Monomial.S) : sig
     (** Maximum index [i] of variables {%html:\(x_i\)%} appearing in the
        polynomial.  If [n = imax p] then [p] can be seen as a polynomial in
        {%html:\((x_0,\dots,x_n)\)%}.  Returns [None] if [p] is zero or one.*)
-    
+
     val const : scalar -> t
     (** Constant polynomials *)
 
     val xi : int -> t
     (** [xi i] is the polynomial {%html:\(x_i\)%} *)
-      
+
     val of_monomial : monomial -> t
     (** Return the polynomial consisting of the given monomial multiplied by the
        unit ring element. *)
-    
+
     val add_monomial : monomial -> scalar -> t -> t
     (** [add_monomial c m p] adds the monomial [m] with coefficient [c] to the
         polynomial [p] *)
@@ -351,7 +351,7 @@ module Polynomial (MM : Monomial.S) : sig
 
     val map : (scalar -> scalar) -> t -> t
     (** Apply a function on the coefficients of the polynomial. *)
-    
+
     val of_list : (scalar * monomial) list -> t
     (** Create a polynomial by adding all monomials with their given
         coefficients. *)
@@ -360,18 +360,19 @@ module Polynomial (MM : Monomial.S) : sig
 
     val default_names : names ref
   end
-  
+
   (** The Polynomial functor *)
   module Make (R : Ring) :
     (S with type scalar = R.t)
-    
+
 end
 
-(* (\** Generic polynomials with arbitrary number of variables *\)
- * module PolyGeneric : sig
- *   include (Polynomial(Monomial.Generic).S)
- * end *)
-    
+(** Generic polynomials with arbitrary number of variables *)
+module PolyGeneric : sig
+  module Make (R : Ring) :
+    (Polynomial(Monomial.Generic).S with type scalar = R.t)
+end
+
 (** Polynomials with rational coefficients with arbitrary number of variables *)
 module RatPoly :
   (Polynomial(Monomial.Generic).S with type scalar = Rationals.t)
@@ -382,7 +383,7 @@ module RealPoly :
 
 (** {3 Polynomials in one variable} *)
 
-(** Polynomials in one variable. 
+(** Polynomials in one variable.
 
     A module of type [Polynomial1] can be used as a {!Polynomial}.
 
@@ -395,8 +396,11 @@ module Polynomial1 : sig
     val x : t
     (** The {%html:\(x\)%} polynomial *)
 
+    val compose : t -> t -> t
+      (** [compose p q] is the polynomial [p(q)]. *)
+
     val of_array : scalar array -> t
-    (** For instance [of_array [| 3; 4; 5|]] is the polynomial 
+    (** For instance [of_array [| 3; 4; 5|]] is the polynomial
         {%html:\(3 + 4x + 5x^2\)%}. *)
 
     val to_generic : int -> t -> generic
@@ -412,7 +416,7 @@ module Polynomial1 : sig
 
 end
 
-(** Polynomials in one variable with rational coefficients. 
+(** Polynomials in one variable with rational coefficients.
 
 For instance, the following code
 {[
@@ -431,8 +435,8 @@ module RatPoly1 :
   (Polynomial1.S
    with type scalar = Rationals.t
     and type generic = RatPoly.t)
-   
-(** Polynomials in one variable with real (float) coefficients. 
+
+(** Polynomials in one variable with real (float) coefficients.
 
 For instance, the following code
 {[
@@ -458,7 +462,7 @@ module RealPoly1 :
    variables as polynomials in one variable over the ring of polynomials in one
    variable. Namely, one can write fo instance:
 
-      
+
       {[module RatPoly2 = Polynomial1.Make(RatPoly1)]}
 
 
@@ -492,12 +496,12 @@ sig
 (** Tensor product {%html:\(f(x)\otimes g(y)\)%}. *)
 
   val contract : t -> P.t
-  (** Contraction of tensor products on the diagonal {%html:\(x=y\)%}: 
- 
-      {%html:\[f(x)\otimes g(y) \to f(x)g(x)\]%} 
+  (** Contraction of tensor products on the diagonal {%html:\(x=y\)%}:
+
+      {%html:\[f(x)\otimes g(y) \to f(x)g(x)\]%}
 
       In other words [P.equal (tensor f g |> contract) P.(f * g)] is true. *)
-                        
+
 end
 
 (** {1 Semiclassical Weyl Algebras} *)
@@ -533,7 +537,9 @@ module Weyl : sig
     include Algebra
     val bracket : t -> t -> t
   end
-  
+
+
+  (** Monomials in {%html:\((\hbar, q_1, p_1, q_2, p_2, \dots)\)%}. *)
   module Monomial : sig
     include Monomial.S
     val hbar : t
@@ -541,7 +547,7 @@ module Weyl : sig
     val pi : int -> t
   end
 
-  
+
   (** Construct a Weyl algebra over the field F.
 
 A module constructed by this function can be used as a {!Poisson}.  *)
@@ -551,47 +557,47 @@ A module constructed by this function can be used as a {!Poisson}.  *)
 
     val qi : int -> t
     (** The {%html:\(q_i\)%} coordinate. *)
-      
+
     val pi : int -> t
     (** The {%html:\(p_i\)%} coordinate. *)
-    
+
     val poisson : t -> t -> t
     val poisson2 : t -> t -> t
     (** The Poisson bracket:
           {%html:\[
-            \{f,g\} = \sum_{i=1}^n 
-        \left(\frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i} 
+            \{f,g\} = \sum_{i=1}^n
+        \left(\frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i}
         - \frac{\partial f}{\partial q_i}\frac{\partial g}{\partial p_i}\right).
         \]%}
     *)
 
     val moyal : t -> t -> t
-    (** [moyal f g] is the Weyl deformation of the Poisson bracket. 
-        It is equal to {%html:\(i/\hbar\)%} times the Moyal bracket 
+    (** [moyal f g] is the Weyl deformation of the Poisson bracket.
+        It is equal to {%html:\(i/\hbar\)%} times the Moyal bracket
         of [f] and [g] (not the Moyal product):
 
           {%html:\[
-        \frac{i}{\hbar}[ f,g ] (q,p , \hbar ) = \Delta^* 
-        \sum_{k\geq 0} (-1)^{k} 
+        \frac{i}{\hbar}[ f,g ] (q,p , \hbar ) = \Delta^*
+        \sum_{k\geq 0} (-1)^{k}
         \frac{\hbar^{2k}}{2^{2k} (2k+1)!}
-        \Pi^{2k+1} (f\otimes g) 
+        \Pi^{2k+1} (f\otimes g)
         = \{f,g\} + O(\hbar^3) ,
         \]%}
 
-        where {%html:\(\Pi\)%} is the bi-Poisson operator 
+        where {%html:\(\Pi\)%} is the bi-Poisson operator
         and {%html:\(\Delta^*\)%} is the contraction operator
-        ({!PolyTensor.contract}). 
-        See also the 
-        {{:https://en.wikipedia.org/wiki/Moyal_bracket}wikipedia page}, 
+        ({!PolyTensor.contract}).
+        See also the
+        {{:https://en.wikipedia.org/wiki/Moyal_bracket}wikipedia page},
         but the sign convention there is opposite.
 
-        We don't define the Moyal star product here, 
+        We don't define the Moyal star product here,
         because it requires complex coefficients. See the {!CWeyl} module. *)
   end
 end
 
-              
-              
+
+
 (* module DummyAlg (F : Field) = *)
 (* struct *)
 (*   type t = F.t * F.t *)
@@ -614,7 +620,7 @@ end
 
 (* open Algo;; *)
 
-(* 
+(*
 Local Variables:
 compile-command:"cd ..; dune build"
 End:

@@ -7,7 +7,7 @@ Work in progress...
 [Documentation](https://svungoc.github.io/poly-weyl/index.html) is available.
 
 
-## Module Math (package math-alg)
+## Module [Math](https://svungoc.github.io/poly-weyl/math-alg/Math/index.html) (package math-alg)
 
 + Basics algebraic structures:
 
@@ -17,7 +17,7 @@ Work in progress...
 	- modules over a ring
 	- vector spaces over a field
 	- algebra over a ring
-	- Lie algegra
+	- Lie algebra
 
 + Usual implementations
 
@@ -44,7 +44,6 @@ Work in progress...
 	- Moyal bracket
 	- TODO: Birkhoff normal forms
 
-## Module Latex (package math-latex)
+## Module [Latex](https://svungoc.github.io/poly-weyl/math-latex/Latex/index.html) (package math-latex)
 
 Conversion to/from Latex code for simple algebraic expressions.
-

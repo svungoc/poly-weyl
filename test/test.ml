@@ -166,3 +166,5 @@ let test_weyl () =
   print_endline "test_weyl OK"
 
 let () = test_weyl ()
+
+(* TODO test compose *)
